@@ -1,6 +1,7 @@
 # 介绍
 douyin爬虫，提供web用户页面url，抓取用户视频； 
 
+```bash
 dy 0.1.0
 lito0210@outlook.com
 dy spider
@@ -15,7 +16,7 @@ OPTIONS:
     -t, --threading <THREADING>    单线程(single)vs多线程(multi)
     -u, --url <URL>                抖音视频主页url
     -V, --version                  Print version information
-
+```
 
 # 使用命令
 cargo run -- --url https://test.test --path /home/
