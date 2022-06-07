@@ -1,0 +1,5 @@
+rd_enabled = true
+fleet_id = "0ae2174e-4978-4fc0-9c98-d80c3abe64ab"
+
+[build]
+sccache = "/root/.cargo/bin/sccache"
