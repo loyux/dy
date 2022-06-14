@@ -111,6 +111,7 @@ async fn download_dy_video(
     let download_path = PathBuf::from_str(&d_path)?;
     let contents = response.bytes().await?;
     let _files = tokio::fs::write(download_path.join(d_name_splited), contents).await?;
+    // let pajjj = PathBuf::from("sad").to_str().unwrap().to_string();
     Ok(())
 }
 
@@ -131,19 +132,26 @@ async fn download_dy_video(
         .unwrap();
     //测试发现，问号格式不统一导致
     //code: 123, kind: InvalidFilename, message: "文件名、目录名或卷标语法不正确
-    let ppp = d_name.replace("\n", "").replace("?", "？");
-    if d_path.ends_with("\\") {
-        let download_path = d_path + &ppp.trim() + ".mp4";
+    let replaced_name = d_name.replace("\n", "").replace("?", "？");
+    let contents = response.bytes().await.unwrap();
+    let download_path = PathBuf::from(d_path).to_str().unwrap().to_string();
+    let _files = tokio::fs::write(download_path + "\\" + replaced_name.as_str() + ".mp4", contents).await.unwrap();
 
-        let contents = response.bytes().await.unwrap();
-        let _files = tokio::fs::write(download_path, contents).await.unwrap();
-    } else {
-        let d_path = d_path + "\\";
-        let download_path = d_path + &ppp.trim() + ".mp4";
 
-        let contents = response.bytes().await.unwrap();
-        let _files = tokio::fs::write(download_path, contents).await.unwrap();
-    }
+    //验证path
+    // let ppp = d_name.replace("\n", "").replace("?", "？");
+    // if d_path.ends_with("\\") {
+    //     let download_path = d_path + &ppp.trim() + ".mp4";
+
+    //     let contents = response.bytes().await.unwrap();
+    //     let _files = tokio::fs::write(download_path, contents).await.unwrap();
+    // } else {
+    //     let d_path = d_path + "\\";
+    //     let download_path = d_path + &ppp.trim() + ".mp4";
+
+    //     let contents = response.bytes().await.unwrap();
+    //     let _files = tokio::fs::write(download_path, contents).await.unwrap();
+    // }
 }
 
 //测试下载功能;
