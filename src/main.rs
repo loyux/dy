@@ -3,7 +3,9 @@ use dy::logs::log_init;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    dy::cli::cli_run().await?;
     log_init();
+
+    dy::cli::cli_run().await?;
+    
     Ok(())
 }

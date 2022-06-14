@@ -10,7 +10,6 @@ pub fn log_init() {
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
     // this creates a new event, outside of any spans.
-    info!("*******log init completed******");
 }
 
 #[cfg(test)]
