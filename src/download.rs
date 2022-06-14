@@ -224,8 +224,8 @@ pub async fn use_recv2download_dy_video(
             &client,
             &headers,
         )
-        .await
-        .expect("download video error");
+        .await;
+        // .expect("download video error");
     }
     Ok(())
 }
@@ -260,8 +260,8 @@ pub async fn use_recv2download_dy_video_with_lines(
             &client,
             &headers,
         )
-        .await
-        .expect("download video error");
+        .await;
+        // .expect("download video error");
     }
     pb.finish();
     Ok(())

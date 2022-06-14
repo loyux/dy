@@ -8,6 +8,10 @@ linker = '/usr/bin/clang'
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-Ctarget-feature=+crt-static"]
 
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-Ctarget-feature=+crt-static"]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-gcc-ar"
 
 [target.x86_64-apple-darwin]
 rustflags = [

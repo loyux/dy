@@ -1,9 +1,11 @@
 use clap::Parser;
+
+use crate::download;
 use anyhow::Error;
 use crossbeam_channel::unbounded;
-use crate::download;
 use reqwest::Client;
-#[derive(Parser, Debug)]
+
+#[derive(Debug, Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
     /// 抖音视频主页url
@@ -23,8 +25,7 @@ pub struct Args {
     pub file: Option<String>,
 }
 
-
-pub async fn cli_run() -> Result<(),Error> {
+pub async fn cli_run() -> Result<(), Error> {
     let args = Args::parse();
     let all_path = args.path;
     let user_url = args.url;
@@ -44,7 +45,6 @@ pub async fn cli_run() -> Result<(),Error> {
         Ok(_) => println!("1"),
         Err(_) => println!("2"),
     }
-
 
     match args.threading {
         Some(value) => {
