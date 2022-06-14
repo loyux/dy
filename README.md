@@ -1,5 +1,5 @@
 # 介绍
-douyin爬虫，提供web用户页面url，抓取用户视频； 
+douyin爬虫，提供web用户页面的url，由此url抓s取用户视频； 
 
 ```bash
 dy 0.1.0
@@ -20,8 +20,6 @@ OPTIONS:
 
 # 使用命令
 cargo run -- --url https://test.test --path /home/
-./target/debug/dy --url https://test.test --path /home/
-
 
 
 该仓库仅供个人学习使用,请勿用于任何商业用途,造成的后果与作者无关；
