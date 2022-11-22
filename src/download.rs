@@ -10,13 +10,14 @@ use reqwest::header::HeaderValue;
 use reqwest::{self, Client};
 use serde_json;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 use tokio;
 use tracing::info;
 
-///递归-异步-特殊的包装函数
+///递归-异步-特殊的包装函数,获取dy视频的名字和下载链接
 pub fn req_dy_digui(
     max_cursor_num: String,
     client: Client,
@@ -37,47 +38,42 @@ pub fn req_dy_digui(
             + max_cursor_num.as_str()
             + "&aid=1128"
             + "&_signature=2Vx9mxAZh0o-K4Wdv7NFKNlcfY";
-
         let response = client
             .get(t1)
             .headers(headers.clone())
             .send()
             .await
             .unwrap();
-
         let response_text = response.text().await.unwrap();
         let posts: Value = serde_json::from_str(&response_text).unwrap();
-
         //获取下载url和名字，并通过channel进行推送;
-
         for uou in 0..25 {
             tokio::time::sleep(Duration::from_millis(20)).await;
             // let url_sig = posts["aweme_list"][uou]["video"]["play_addr"]["url_list"][0].clone();
             // let arc_posts = Arc::clone(&posts);
-            let dy_video = posts["aweme_list"][uou]["desc"].clone();
+            let dy_video: Value = posts["aweme_list"][uou]["desc"].clone();
             let url_sig = posts["aweme_list"][uou]["video"]["play_addr"]["url_list"][0].clone();
-            // let dy_video = posts["desc"][uou].clone();
-            // println!("{:?}", dy_video);
-            // let video_name = posts.clone();
-            if url_sig.as_str() == None {
+            if url_sig.as_str().is_none() {
                 break;
             } else {
                 let dy_url = url_sig.as_str().unwrap().to_string();
-
                 let dy_name = dy_video.as_str().unwrap();
-
                 //send_format
-                if dy_name.len() > 240 {
-                    let d_name_vec: Vec<_> = dy_name.split("，").collect();
-                    let info_msg = d_name_vec[0];
-                    info!(info_msg);
-                    let sending_msg = dy_url + "@@" + d_name_vec[0];
-                    sender.send(sending_msg).unwrap();
-                } else {
-                    info!(dy_name);
-                    let sending_msg = dy_url + "@@" + dy_name;
-                    sender.send(sending_msg).unwrap();
-                }
+                info!("video_name: {}", dy_name);
+                info!("video_url: {}", dy_url);
+                // if dy_name.len() > 240 {
+                //     let d_name_vec: Vec<_> = dy_name.split("，").collect();
+                //     let info_msg = d_name_vec[0];
+                //     info!(info_msg);
+                //     let sending_msg = dy_url + "@@" + d_name_vec[0];
+                //     sender.send(sending_msg).unwrap();
+                // } else {
+                //     info!(dy_name);
+                //     let sending_msg = dy_url + "@@" + dy_name;
+                //     sender.send(sending_msg).unwrap();
+                // }
+                let sending_msg = dy_url + "@@" + dy_name;
+                sender.send(sending_msg).unwrap();
             }
         }
         let max_cursor_rt = posts["max_cursor"].as_u64();
@@ -98,7 +94,7 @@ pub fn req_dy_digui(
 
 ///异步下载器，提供url和reqwest client进行下载
 #[cfg(target_os = "linux")]
-async fn download_dy_video(
+pub async fn download_dy_video(
     d_url: String,
     d_name: String,
     d_path: String,
@@ -135,8 +131,12 @@ async fn download_dy_video(
     let replaced_name = d_name.replace("\n", "").replace("?", "？");
     let contents = response.bytes().await.unwrap();
     let download_path = PathBuf::from(d_path).to_str().unwrap().to_string();
-    let _files = tokio::fs::write(download_path + "\\" + replaced_name.as_str() + ".mp4", contents).await.unwrap();
-
+    let _files = tokio::fs::write(
+        download_path + "\\" + replaced_name.as_str() + ".mp4",
+        contents,
+    )
+    .await
+    .unwrap();
 
     //验证path
     // let ppp = d_name.replace("\n", "").replace("?", "？");
