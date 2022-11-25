@@ -10,7 +10,6 @@ use reqwest::header::HeaderValue;
 use reqwest::{self, Client};
 use serde_json;
 use serde_json::Value;
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
@@ -26,7 +25,8 @@ pub fn req_dy_digui(
     user_url: String,
 ) -> BoxFuture<'static, String> {
     async move {
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        //取消延时
+        // tokio::time::sleep(Duration::from_secs(1)).await;
         // info!("递归抓取抖音视频");
         let sec_uid = get_sec_id(user_url.as_str());
         let t1 = "https://www.iesdouyin.com/web/api/v2/aweme/post/".to_string()
@@ -73,6 +73,7 @@ pub fn req_dy_digui(
                 //     sender.send(sending_msg).unwrap();
                 // }
                 let sending_msg = dy_url + "@@" + dy_name;
+
                 sender.send(sending_msg).unwrap();
             }
         }
@@ -106,7 +107,7 @@ pub async fn download_dy_video(
     let d_name_splited = d_name.to_string() + ".mp4";
     let download_path = PathBuf::from_str(&d_path)?;
     let contents = response.bytes().await?;
-    let _files = tokio::fs::write(download_path.join(d_name_splited), contents).await?;
+    tokio::fs::write(download_path.join(d_name_splited), contents).await?;
     // let pajjj = PathBuf::from("sad").to_str().unwrap().to_string();
     Ok(())
 }
@@ -232,7 +233,7 @@ pub async fn use_recv2download_dy_video(
             &client,
             &headers,
         )
-        .await;
+        .await?;
         // .expect("download video error");
     }
     Ok(())
@@ -268,7 +269,7 @@ pub async fn use_recv2download_dy_video_with_lines(
             &client,
             &headers,
         )
-        .await;
+        .await?;
         // .expect("download video error");
     }
     pb.finish();

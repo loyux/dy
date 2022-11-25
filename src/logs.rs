@@ -1,4 +1,4 @@
-use tracing::{info, Level};
+use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
 pub fn log_init() {
@@ -34,7 +34,7 @@ mod test_crossbeam_channel {
             if recver.is_empty() {
                 break;
             }
-            info!("开始了一个新的loop");
+            // info!("开始了一个新的loop");
             let t1 = recver.clone();
             tokio::spawn(async move {
                 let pp = t1.recv().unwrap();
@@ -65,7 +65,7 @@ mod test_crossbeam_channel {
             if recver.is_empty() {
                 break;
             }
-            info!("开始了第{}新的loop", i);
+            // info!("开始了第{}新的loop", i);
             let t1 = recver.clone();
             tokio::spawn(async move {
                 let pp = t1.recv().unwrap();

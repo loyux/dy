@@ -14,15 +14,15 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, post},
-    Json, Router,
+    Extension, Json, Router,
 };
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 
+use crate::req_api::{list_elems, Dylist, Dyurl, Elp};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{fmt::Display, net::SocketAddr};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // Quick instructions
 //
@@ -52,19 +52,20 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // static KEYS: &str = "a";
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG").unwrap_or_else(|_| "example_jwt=debug".into()),
-        ))
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
+pub async fn server_run() {
+    let cc = ClientInfo {
+        client_id: "foo".to_string(),
+        client_secret: "bard".to_string(),
+    };
     let app = Router::new()
         .route("/protected", get(protected))
-        .route("/authorize", post(authorize));
-
+        .route("/authorize", post(authorize))
+        //解决error[E0277]: the trait bound `fn(bool) -> impl Future {handler}: Handler<_, _>` is not satisfied
+        //参考资料https://docs.rs/axum/latest/axum/handler/trait.Handler.html
+        //引入特性 axum-macros
+        //中间件结构体引入ClientInfo clone traits
+        .layer(Extension(cc))
+        .route("/dy", post(dy_info_list));
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     tracing::debug!("listening on {}", addr);
 
@@ -74,8 +75,8 @@ async fn main() {
         .unwrap();
 }
 static KEYS: Lazy<Keys> = Lazy::new(|| {
-    // let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    let secret = "hello";
+    let secret = std::env::var("JWT_SECRET").expect("Need JWT_SECRET env var");
+    // let secret = "hello";
     Keys::new(secret.as_bytes())
 });
 
@@ -88,13 +89,23 @@ async fn protected(claims: Claims) -> Result<String, AuthError> {
     ))
 }
 
-async fn authorize(Json(payload): Json<AuthPayload>) -> Result<Json<AuthBody>, AuthError> {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct ClientInfo {
+    client_id: String,
+    client_secret: String,
+}
+
+async fn authorize(
+    Json(payload): Json<AuthPayload>,
+    cc: Extension<ClientInfo>,
+) -> Result<Json<AuthBody>, AuthError> {
     // Check if the user sent the credentials
+
     if payload.client_id.is_empty() || payload.client_secret.is_empty() {
         return Err(AuthError::MissingCredentials);
     }
     // Here you can check the user credentials from a database
-    if payload.client_id != "foo" || payload.client_secret != "bar" {
+    if payload.client_id != cc.client_id || payload.client_secret != cc.client_secret {
         return Err(AuthError::WrongCredentials);
     }
     let claims = Claims {
@@ -106,7 +117,7 @@ async fn authorize(Json(payload): Json<AuthPayload>) -> Result<Json<AuthBody>, A
     // Create the authorization token
     let token = encode(&Header::default(), &claims, &KEYS.encoding)
         .map_err(|_| AuthError::TokenCreation)?;
-
+    println!("{}", &token);
     // Send the authorized token
     Ok(Json(AuthBody::new(token)))
 }
@@ -115,6 +126,25 @@ impl Display for Claims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Email: {}\nCompany: {}", self.sub, self.company)
     }
+}
+
+///保护的展示抖音链接
+async fn dy_info_list(dy_url: Json<Dyurl>, _cde: Hello) -> Json<Dylist> {
+    let pd = list_elems(&dy_url.url).await;
+    let mut newv = Vec::new();
+    for i in pd {
+        let dc: Vec<String> = i.split("@@").map(|x| x.to_string()).collect();
+        // let d1 = format!("name:{}, url:{}", dc[0], dc[1]);
+        let elp = Elp {
+            name: dc[1].clone(),
+            url: dc[0].clone(),
+        };
+        newv.push(elp);
+    }
+    let ppd = Dylist { elem: newv };
+
+    // info!("{:?}", &ppd);z
+    Json(ppd)
 }
 
 impl AuthBody {
@@ -133,16 +163,48 @@ where
 {
     type Rejection = AuthError;
 
+    ///从header中将认证的token拿出来
     async fn from_request(parts: &mut RequestParts<S>) -> Result<Self, Self::Rejection> {
         // Extract the token from the authorization header
+
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| AuthError::InvalidToken)?;
+
+        // Decode the user data
+        let token_data = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
+            .map_err(|_| AuthError::InvalidToken)?;
+        Ok(token_data.claims)
+    }
+}
+
+//定义一个结构体，引入从request获取参数的trait
+#[derive(Debug, Serialize, Deserialize)]
+struct Hello {
+    // sub: String,
+    // company: String,
+    // exp: usize,
+}
+
+#[async_trait]
+impl<S> FromRequest<S> for Hello
+where
+    S: Send + Sync,
+{
+    type Rejection = AuthError;
+    async fn from_request(parts: &mut RequestParts<S>) -> Result<Self, Self::Rejection> {
+        // Extract the token from the authorization header
+
+        //拿出来远端
+        println!("{:?}", parts.headers());
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
             .map_err(|_| AuthError::InvalidToken)?;
         // Decode the user data
-        let token_data = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
+        let token_data = decode::<Hello>(bearer.token(), &KEYS.decoding, &Validation::default())
             .map_err(|_| AuthError::InvalidToken)?;
-
         Ok(token_data.claims)
     }
 }
@@ -196,7 +258,7 @@ struct AuthPayload {
 }
 
 #[derive(Debug)]
-enum AuthError {
+pub enum AuthError {
     WrongCredentials,
     MissingCredentials,
     TokenCreation,
