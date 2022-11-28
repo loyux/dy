@@ -32,6 +32,8 @@ jsonwebtoken = "8.1.1"
 headers = "0.3.8"
 async-trait = "0.1.58"
 once_cell = "1.16.0"
+# utoipa-swagger-ui = { version = "2.0.2", features = ["axum"] }
+#https://github.com/juhaku/utoipa/tree/80c449aeeaa98c6b5e9825007709264d1996cc6d/utoipa-swagger-ui
 # encoding = "0.2.33"
 
 [dependencies.tokio]

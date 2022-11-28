@@ -14,9 +14,10 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, post},
-    Extension, Json, Router,
+    Extension, Form, Json, Router,
 };
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use log::info;
 
 use crate::req_api::{list_elems, Dylist, Dyurl, Elp};
 use once_cell::sync::Lazy;
@@ -51,6 +52,19 @@ use std::{fmt::Display, net::SocketAddr};
 //     http://localhost:3000/protected
 
 // static KEYS: &str = "a";
+pub async fn healthy_check() -> impl IntoResponse {
+    let time_now = chrono::Local::now().format("%Y-%m-%d %H:%M").to_string();
+    let rp = format!("time: {}, Healthy", time_now);
+    rp
+}
+
+pub async fn server_run_with_swagger() {
+    let cc = ClientInfo {
+        client_id: "foo".to_string(),
+        client_secret: "bard".to_string(),
+    };
+    todo!();
+}
 
 pub async fn server_run() {
     let cc = ClientInfo {
@@ -60,6 +74,8 @@ pub async fn server_run() {
     let app = Router::new()
         .route("/protected", get(protected))
         .route("/authorize", post(authorize))
+        .route("/authform", post(authorize_form_data))
+        .route("/healthy", get(healthy_check))
         //解决error[E0277]: the trait bound `fn(bool) -> impl Future {handler}: Handler<_, _>` is not satisfied
         //参考资料https://docs.rs/axum/latest/axum/handler/trait.Handler.html
         //引入特性 axum-macros
@@ -94,6 +110,33 @@ struct ClientInfo {
     client_id: String,
     client_secret: String,
 }
+async fn authorize_form_data(
+    Form(payload): Form<AuthPayload>,
+    cc: Extension<ClientInfo>,
+) -> Result<Json<AuthBody>, AuthError> {
+    dbg!(&payload);
+    if payload.client_id.is_empty() || payload.client_secret.is_empty() {
+        info!("login error empty msg");
+        return Err(AuthError::MissingCredentials);
+    }
+    // Here you can check the user credentials from a database
+    if payload.client_id != cc.client_id || payload.client_secret != cc.client_secret {
+        info!("incorrect msg");
+        return Err(AuthError::WrongCredentials);
+    }
+    let claims = Claims {
+        sub: "b@b.com".to_owned(),
+        company: "ACME".to_owned(),
+        // Mandatory expiry time as UTC timestamp
+        exp: 2000000000, // May 2033
+    };
+    // Create the authorization token
+    let token = encode(&Header::default(), &claims, &KEYS.encoding)
+        .map_err(|_| AuthError::TokenCreation)?;
+    println!("{}", &token);
+    // Send the authorized token
+    Ok(Json(AuthBody::new(token)))
+}
 
 async fn authorize(
     Json(payload): Json<AuthPayload>,
@@ -102,10 +145,14 @@ async fn authorize(
     // Check if the user sent the credentials
 
     if payload.client_id.is_empty() || payload.client_secret.is_empty() {
+        info!("login error empty msg");
+
         return Err(AuthError::MissingCredentials);
     }
     // Here you can check the user credentials from a database
     if payload.client_id != cc.client_id || payload.client_secret != cc.client_secret {
+        info!("WrongCredentials");
+
         return Err(AuthError::WrongCredentials);
     }
     let claims = Claims {

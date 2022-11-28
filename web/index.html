@@ -1,0 +1,99 @@
+<!DOCTYPE html html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <title>Func</title>
+</head>
+
+<body>
+
+    <div style="text-align:center;vertical-align:middle;">
+        <h1>welcome</h1>
+        <h2>请在以下框内输入链接</h2>
+    </div>
+    <div style="text-align:center;vertical-align:middle;"><input type="text" id="url"> </div>
+    <div style="text-align:center;vertical-align:middle;"><button id="geturl" onclick="scrapy()">Go</button></div>
+    <div style="text-align:center;vertical-align:middle;"><button id="btn">退出登录</button></div>
+    <table width="1000" height="100" bgcolor=white border="0" cellspacing="20">
+        <thead>
+            <tr>
+                <th>视频文字</th>
+                <th>视频链接</th>
+            </tr>
+        </thead>
+        <tbody id="tbMain"></tbody>
+    </table>
+</body>
+<script>
+    function scrapy() {
+        let url = document.getElementById("url").value;
+        const msg = new String(url);
+        if (msg.startsWith("https://www.douyin.com/user/")) {
+            let bearer_token = "Bearer " + localStorage.getItem('token');
+            var myHeaders = new Headers();
+            myHeaders.append("Authorization", bearer_token);
+            myHeaders.append("User-Agent", "Apifox/1.0.0 (https://www.apifox.cn)");
+            myHeaders.append("Content-Type", "application/json");
+            myHeaders.append("Accept", "*/*");
+            myHeaders.append("Host", "115.159.115.244:3000");
+            myHeaders.append("Connection", "keep-alive");
+            var raw = JSON.stringify({
+                "url": url
+            });
+
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                body: raw,
+                redirect: 'follow'
+            };
+
+            fetch("https://115.159.115.244/dy", requestOptions)
+                .then(response => response.json())
+                .then(result => {
+                    let data = result["elem"];
+                    for (var ii in data) {
+                        console.log(data[ii]);
+                        let name = data[ii]["douyin_text"];
+                        let url = data[ii]["video"];
+                        var row = document.createElement('tr'); //创建行 
+                        var idCell = document.createElement('td'); //创建第一列id 
+                        idCell.innerHTML = name; //填充数据 
+                        row.appendChild(idCell); //加入行 ，下面类似
+                        //创建第二列id
+                        var dyurl = document.createElement('td');
+                        dyurl.innerHTML = url;
+                        row.appendChild(dyurl);
+                        var tbody = document.getElementById('tbMain');
+                        tbody.appendChild(row);
+                    }
+                })
+                .catch(error => console.log('error', error));
+            alert("请稍等，正在等待数据");
+        } else {
+            alert("您输入的链接不正确，请检查");
+        }
+
+    }
+</script>
+
+
+<script>
+    window.onload = function () {
+        //1 拿到传过来的token
+        var token = localStorage.getItem('token');
+        if (!token) {
+            //2 当没有token时
+            alert('您尚未登录，请登录后再执行此操作！')
+            location.href = './login.html'
+        } else {
+            console.log("welcome");
+        }
+    }
+    let btn = document.getElementById('btn')
+    btn.addEventListener('click', () => {
+        localStorage.clear()	//清空tokon
+        location.href = './login.html'
+    })
+</script>

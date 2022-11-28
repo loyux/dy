@@ -1,0 +1,53 @@
+<!DOCTYPE html html>
+
+
+<head>
+    <meta charset="utf-8">
+    <title>Login</title>
+</head>
+<link rel="stylesheet" type="text/css" href="aa.css">
+
+<body>
+    <form class="box">
+        <h1>Login</h1>
+        <input type="client_id" name="client_id" id="username" placeholder="client_id" autocomplete="true">
+        <input type="client_secret" name="client_secret" id="password" placeholder="client_secret">
+        <input type="submit" id='submit' value="Login" onclick="myfunc()">
+    </form>
+    <!-- <button id="submit">登陆</button> -->
+</body>
+<!-- 
+<div>账号：<input id="username" /></div>
+<div>密码：<input id="password" /></div>
+<button id="submit">登陆</button> -->
+
+<script>
+    function myfunc() {
+        let username = document.getElementById('username').value;
+        let password = document.getElementById('password').value;
+        fetch('https://115.159.115.244/authorize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                "client_id": username,
+                "client_secret": password
+            })
+        }).then(res => res.json()).then(data => {
+            console.log(data);
+            if (data.access_token === null) {
+                console.log(data.error);
+            } else {
+                localStorage.setItem('token', data.access_token)
+                console.log(localStorage.getItem('token'));
+                console.log("开始定向")
+                location.href = `./index.html`
+            }
+        }).catch(err => {
+            console.log(err); alert("Wrong username or password");
+        });
+    }
+    //}
+</script>
